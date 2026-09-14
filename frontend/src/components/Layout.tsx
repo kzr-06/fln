@@ -5,7 +5,7 @@ import {
   Menu, X, Search, Bell, Sun, Moon, LogOut, ChevronRight, ChevronLeft, ChevronDown,
   LayoutDashboard, BookOpen, UserCheck, Calendar, ShieldCheck, HelpCircle, Settings, Users,
   School, GraduationCap, MapPin, BarChart3, ClipboardList, ShieldAlert, KeyRound, Clock, Database, Home,
-  Fingerprint
+  Fingerprint, Award
 } from 'lucide-react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -149,6 +149,7 @@ export const Layout: React.FC<LayoutProps> = ({
         });
         list.push({ name: 'Worksheets', view: 'worksheets', icon: ClipboardList });
         list.push({ name: 'Misconceptions', view: 'misconceptions', icon: Fingerprint });
+        list.push({ name: 'Best Practices', view: 'best_practices', icon: Award });
         break;
 
       case UserRole.VOLUNTEER:

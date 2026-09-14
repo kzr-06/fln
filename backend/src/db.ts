@@ -585,28 +585,43 @@ export interface Intervention {
     assessmentId?: string;
     detectedAt?: string;
   };
-  isPromoted: boolean;
-  promotedAt?: string;
   createdAt: string;
 }
 
 export interface BestPractice {
-  id: string;
-  interventionId: string;
-  teacherId: string;
-  teacherName: string;
-  schoolId: string;
-  weakCompetencies: string[];
-  strategyType: string;
-  strategyDescription: string;
-  levelBefore: number;
-  levelAfter: number;
-  levelJump: number;
+  id: string;                      // `bp_${randomUUID()}` — full UUID
+  creatorId: string;               // Injected server-side from getAuthUser(req).id
+  creatorName: string;             // Injected server-side from getAuthUser(req).name
+  strategyName: string;
+  targetCompetencies: string[];    // Array of non-empty, trimmed strings
+  strategyType: string;            // One of InterventionStrategyType values
   duration: string;
-  tags: string[];
-  viewCount: number;
-  createdAt: string;
+  strategyDescription: string;
+  studentsReached: number;         // Integer >= 1
+  className?: string;              // Optional free-text label
+  usedByOthers: number;            // Plain counter; starts at 0; never decrements
+  usedByUsers?: string[];          // List of user IDs who have used this BP
+  createdAt: string;               // ISO 8601, set at creation, immutable
+  updatedAt: string;               // ISO 8601, updated on every write
 }
+
+/**
+ * Explicit type for creator-editable fields.
+ * The DB layer accepts only this type — immutable fields (id, creatorId,
+ * creatorName, usedByOthers, createdAt, updatedAt) are structurally
+ * excluded and cannot accidentally reach the database.
+ */
+export type BestPracticeUpdate = Pick<
+  BestPractice,
+  | 'strategyName'
+  | 'targetCompetencies'
+  | 'strategyType'
+  | 'duration'
+  | 'strategyDescription'
+  | 'studentsReached'
+  | 'className'
+>;
+
 export interface MisconceptionCluster {
   id: string;
   name: string;
@@ -1151,6 +1166,16 @@ export class DBStore {
           console.log('Successfully ensured indexes on "evaluationReports" collection');
         } catch (e: any) {
           console.warn('Failed to ensure indexes on "evaluationReports" collection:', e.message);
+        }
+
+        // Ensure indexes on best_practices collection
+        try {
+          const bpColl = db.collection('best_practices');
+          await bpColl.createIndex({ id: 1 }, { unique: true });
+          await bpColl.createIndex({ creatorId: 1 });
+          console.log('Successfully ensured indexes on "best_practices" collection');
+        } catch (e: any) {
+          console.warn('Failed to ensure indexes on "best_practices" collection:', e.message);
         }
 
         for (const [key, collName] of Object.entries(COLLECTION_NAMES)) {
@@ -2358,24 +2383,98 @@ export class DBStore {
     return i || undefined;
   }
 
-  async getBestPractices() {
-    return await this.mongoDb!.collection<BestPractice>('bestPractices').find({}).toArray();
+  // --- Best Practices Methods ---
+
+  async getBestPractices(): Promise<BestPractice[]> {
+    if (this.mongoDb) {
+      return await this.mongoDb.collection<BestPractice>('best_practices').find({}).toArray();
+    }
+    return this.data?.bestPractices || [];
   }
 
-  async addBestPractice(bp: BestPractice) {
-    await this.mongoDb!.collection('bestPractices').insertOne(bp);
-    if (this.data) this.data.bestPractices.push(bp);
+  async addBestPractice(bp: BestPractice): Promise<BestPractice> {
+    if (this.mongoDb) {
+      await this.mongoDb.collection('best_practices').insertOne(bp);
+    }
+    if (this.data) {
+      this.data.bestPractices.push(bp);
+      if (!this.mongoDb) await this.save();
+    }
     return bp;
   }
 
-  async updateBestPractice(id: string, updates: Partial<BestPractice>) {
-    await this.mongoDb!.collection('bestPractices').updateOne({ id }, { $set: updates });
-    const bp = await this.mongoDb!.collection<BestPractice>('bestPractices').findOne({ id });
-    if (bp && this.data) {
-      const idx = this.data.bestPractices.findIndex(x => x.id === id);
-      if (idx !== -1) this.data.bestPractices[idx] = bp;
+  async updateBestPractice(
+    id: string,
+    updates: BestPracticeUpdate & { updatedAt: string },
+  ): Promise<BestPractice | undefined> {
+    if (this.mongoDb) {
+      await this.mongoDb.collection('best_practices').updateOne({ id }, { $set: updates });
+      const bp = await this.mongoDb.collection<BestPractice>('best_practices').findOne({ id });
+      if (bp && this.data) {
+        const idx = this.data.bestPractices.findIndex(x => x.id === id);
+        if (idx !== -1) this.data.bestPractices[idx] = bp;
+      }
+      return bp || undefined;
     }
-    return bp || undefined;
+    if (this.data) {
+      const idx = this.data.bestPractices.findIndex(x => x.id === id);
+      if (idx === -1) return undefined;
+      this.data.bestPractices[idx] = { ...this.data.bestPractices[idx], ...updates };
+      await this.save();
+      return this.data.bestPractices[idx];
+    }
+    return undefined;
+  }
+
+  async useBestPractice(
+    id: string,
+    additionalStudents: number,
+    userId: string
+  ): Promise<BestPractice | undefined> {
+    if (this.mongoDb) {
+      // Try to update with $addToSet and $inc usedByOthers if user is not in usedByUsers
+      let result = await this.mongoDb.collection('best_practices').findOneAndUpdate(
+        { id, usedByUsers: { $ne: userId } },
+        { 
+          $inc: { studentsReached: additionalStudents, usedByOthers: 1 },
+          $addToSet: { usedByUsers: userId }
+        },
+        { returnDocument: 'after' }
+      );
+      
+      // If result is null, either the BP doesn't exist, OR the user already used it.
+      if (!result) {
+        result = await this.mongoDb.collection('best_practices').findOneAndUpdate(
+          { id, usedByUsers: userId },
+          { $inc: { studentsReached: additionalStudents } },
+          { returnDocument: 'after' }
+        );
+      }
+      
+      const bp = result as unknown as BestPractice | null;
+      if (bp && this.data) {
+        const idx = this.data.bestPractices.findIndex(x => x.id === id);
+        if (idx !== -1) this.data.bestPractices[idx] = bp;
+      }
+      return bp || undefined;
+    }
+    if (this.data) {
+      const idx = this.data.bestPractices.findIndex(x => x.id === id);
+      if (idx === -1) return undefined;
+      // Node.js is single-threaded; this read-modify-write is safe for LocalDB.
+      const bp = this.data.bestPractices[idx];
+      const users = bp.usedByUsers || [];
+      const isNewUser = !users.includes(userId);
+      this.data.bestPractices[idx] = {
+        ...bp,
+        studentsReached: bp.studentsReached + additionalStudents,
+        usedByOthers: bp.usedByOthers + (isNewUser ? 1 : 0),
+        usedByUsers: isNewUser ? [...users, userId] : users,
+      };
+      await this.save();
+      return this.data.bestPractices[idx];
+    }
+    return undefined;
   }
 
   // --- Question Logic Methods ---
@@ -4489,8 +4588,6 @@ export class DBStore {
           assessmentId: 'ws_mid_001',
           detectedAt: '2026-07-02T10:00:00Z'
         },
-        isPromoted: true,
-        promotedAt: '2026-07-03T08:00:00Z',
         createdAt: '2026-06-15T09:00:00Z'
       },
       {
@@ -4510,7 +4607,6 @@ export class DBStore {
         duration: '3 weeks',
         startDate: '2026-06-10',
         status: 'active',
-        isPromoted: false,
         createdAt: '2026-06-10T09:00:00Z'
       },
       {
@@ -4539,7 +4635,6 @@ export class DBStore {
           assessmentId: 'ws_mid_003',
           detectedAt: '2026-07-05T10:00:00Z'
         },
-        isPromoted: false,
         createdAt: '2026-06-20T09:00:00Z'
       },
       {
@@ -4559,28 +4654,7 @@ export class DBStore {
         duration: '1 month',
         startDate: '2026-06-01',
         status: 'active',
-        isPromoted: false,
         createdAt: '2026-06-01T09:00:00Z'
-      }
-    ];
-
-    const bestPractices: BestPractice[] = [
-      {
-        id: 'bp1',
-        interventionId: 'int1',
-        teacherId: 'u5',
-        teacherName: 'Ritu Sharma',
-        schoolId: 'gps-mt-001',
-        weakCompetencies: ['Shapes', 'Patterns'],
-        strategyType: 'visual_aids',
-        strategyDescription: 'Used flashcards with shape outlines and colour-coded pattern strips. Practised daily for 15 minutes during morning assembly. Responded well to colour-based matching exercises.',
-        levelBefore: 8,
-        levelAfter: 10,
-        levelJump: 2,
-        duration: '2 weeks',
-        tags: ['Shapes', 'Patterns', 'Visual Learning', 'Preschool 3', 'Class 1', 'Quick Win'],
-        viewCount: 12,
-        createdAt: '2026-07-03T08:00:00Z'
       }
     ];
 
@@ -4600,7 +4674,7 @@ export class DBStore {
       logbook,
       announcements,
       interventions,
-      bestPractices,
+      bestPractices: [],
       diagnosticAnswerKeys: [],
       misconceptionClusters: [],
       testHistory: [],

@@ -324,28 +324,36 @@ export interface Intervention {
     assessmentId?: string;
     detectedAt?: string;
   };
-  isPromoted: boolean;
-  promotedAt?: string;
   createdAt: string;
 }
 
 export interface BestPractice {
   id: string;
-  interventionId: string;
-  teacherId: string;
-  teacherName: string;
-  schoolId: string;
-  weakCompetencies: string[];
+  creatorId: string;
+  creatorName: string;
+  strategyName: string;
+  targetCompetencies: string[];
   strategyType: string;
-  strategyDescription: string;
-  levelBefore: number;
-  levelAfter: number;
-  levelJump: number;
   duration: string;
-  tags: string[];
-  viewCount: number;
+  strategyDescription: string;
+  studentsReached: number;
+  className?: string;
+  usedByOthers: number;
+  usedByUsers?: string[];
   createdAt: string;
+  updatedAt: string;
 }
+
+export type BestPracticeUpdate = Pick<
+  BestPractice,
+  | 'strategyName'
+  | 'targetCompetencies'
+  | 'strategyType'
+  | 'duration'
+  | 'strategyDescription'
+  | 'studentsReached'
+  | 'className'
+>;
 
 export interface DashboardProps {
   user: User;

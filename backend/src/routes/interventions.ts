@@ -1,6 +1,6 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
-import { dbStore, UserRole, Intervention, BestPractice } from '../db';
+import { dbStore, UserRole, Intervention } from '../db';
 import { getAuthUser } from '../auth';
 
 export function registerInterventionRoutes(app: express.Express) {
@@ -34,7 +34,6 @@ export function registerInterventionRoutes(app: express.Express) {
       duration: duration || '2 weeks',
       startDate: startDate || new Date().toISOString().split('T')[0],
       status: 'active',
-      isPromoted: false,
       createdAt: new Date().toISOString()
     };
     await dbStore.addIntervention(intervention);
@@ -86,62 +85,5 @@ export function registerInterventionRoutes(app: express.Express) {
     res.json(intervention);
   });
 
-  // Promote intervention to Best Practice (teacher only)
-  app.post('/api/interventions/:id/promote', async (req, res) => {
-    const user = getAuthUser(req);
-    if (!user || user.role !== UserRole.TEACHER) {
-      return res.status(403).json({ error: 'Only teachers can promote interventions.' });
-    }
-    const interventions = await dbStore.getInterventions();
-    const intervention = interventions.find(i => i.id === req.params.id);
-    if (!intervention) return res.status(404).json({ error: 'Intervention not found.' });
-    if (intervention.teacherId !== user.id) {
-      return res.status(403).json({ error: 'You can only promote your own interventions.' });
-    }
-    if (!intervention.outcome?.improved) {
-      return res.status(400).json({ error: 'Only interventions with confirmed improvement can be promoted.' });
-    }
-    if (intervention.isPromoted) {
-      return res.status(400).json({ error: 'This intervention is already promoted.' });
-    }
 
-    const bp: BestPractice = {
-      id: 'bp_' + randomUUID().slice(0, 8),
-      interventionId: intervention.id,
-      teacherId: intervention.teacherId,
-      teacherName: intervention.teacherName,
-      schoolId: intervention.schoolId,
-      weakCompetencies: intervention.weakCompetencies,
-      strategyType: intervention.strategyType,
-      strategyDescription: intervention.strategyDescription,
-      levelBefore: intervention.outcome.previousLevel,
-      levelAfter: intervention.outcome.newLevel || intervention.outcome.previousLevel,
-      levelJump: (intervention.outcome.newLevel || 0) - intervention.outcome.previousLevel,
-      duration: intervention.duration,
-      tags: [
-        ...intervention.weakCompetencies,
-        intervention.strategyType.replace('_', ' '),
-        intervention.className
-      ],
-      viewCount: 0,
-      createdAt: new Date().toISOString()
-    };
-
-    await dbStore.addBestPractice(bp);
-    await dbStore.updateIntervention(intervention.id, { isPromoted: true, promotedAt: new Date().toISOString() });
-
-    await dbStore.addLog({
-      id: 'log_' + randomUUID().slice(0, 8),
-      timestamp: new Date().toISOString(),
-      schoolId: user.schoolId || '',
-      schoolName: '',
-      userId: user.id,
-      userEmail: user.email,
-      userRole: user.role,
-      activityType: 'verify',
-      status: 'Success',
-      details: `BEST PRACTICE: Teacher ${user.name} promoted intervention for ${intervention.studentName} to Best Practices Repository`
-    });
-    res.json(bp);
-  });
 }

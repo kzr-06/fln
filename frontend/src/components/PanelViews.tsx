@@ -28,6 +28,7 @@ import { DistrictsPanel } from './panels/DistrictsPanel';
 import { BlocksPanel } from './panels/BlocksPanel';
 import { AnalyticsPanel } from './panels/AnalyticsPanel';
 import { StudentProfilePanel } from './panels/StudentProfilePanel';
+import { BestPracticesPanel } from './panels/BestPracticesPanel';
 
 interface PanelViewsProps {
   activePanel: string;
@@ -153,6 +154,10 @@ export const PanelViews: React.FC<PanelViewsProps> = ({ activePanel, currentUser
   // enroll endpoint. See CLAUDE.md "Hard invariant" on TOTP factors.
   if (panel === 'security') {
     return <SecurityPanel currentUser={currentUser} token={token} />;
+  }
+
+  if (panel === 'best_practices') {
+    return <BestPracticesPanel currentUser={currentUser} token={token} />;
   }
 
   // Fallback for any unmatched panel — renders the roles workspace (dashboard) as the content

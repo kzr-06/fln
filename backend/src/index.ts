@@ -12,7 +12,7 @@ dotenv.config({ path: path.resolve(__dotenv_dir, '..', '.env') });
 
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { dbStore, connectDB, UserRole, User, Student, School, Question, Worksheet, LevelWorksheet, AnswerSubmission, EvaluationReport, Ticket, LogEntry, Intervention, BestPractice, CYCLE_NAMES } from './db';
+import { dbStore, connectDB, UserRole, User, Student, School, Question, Worksheet, LevelWorksheet, AnswerSubmission, EvaluationReport, Ticket, LogEntry, Intervention, CYCLE_NAMES } from './db';
 import { generateAIDiagnostic, evaluateAIDiagnostic, generateAIPersonalizedWorksheet, evaluateAIWorksheet } from './gemini';
 import { generateDiagnosticPaper } from './paperGenerator';
 import { generateQuestionsForLevel } from './levelGenerator';
@@ -265,6 +265,8 @@ registerStatsRoutes(app);
 
   // Create a new intervention
   registerInterventionRoutes(app);
+
+  // Best Practices Repository \u2014 globally shared teacher strategies
   registerBestPracticeRoutes(app);
 
   // In development, serve the frontend using Vite development middleware.

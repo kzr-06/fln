@@ -3326,34 +3326,6 @@
       "createdAt": "2026-06-01T09:00:00Z"
     }
   ],
-  "bestPractices": [
-    {
-      "id": "bp1",
-      "interventionId": "int1",
-      "teacherId": "u5",
-      "teacherName": "Ritu Sharma",
-      "schoolId": "gps-mt-001",
-      "weakCompetencies": [
-        "Shapes",
-        "Patterns"
-      ],
-      "strategyType": "visual_aids",
-      "strategyDescription": "Used flashcards with shape outlines and colour-coded pattern strips. Practised daily for 15 minutes during morning assembly. Responded well to colour-based matching exercises.",
-      "levelBefore": 8,
-      "levelAfter": 10,
-      "levelJump": 2,
-      "duration": "2 weeks",
-      "tags": [
-        "Shapes",
-        "Patterns",
-        "Visual Learning",
-        "Preschool 3",
-        "Class 1",
-        "Quick Win"
-      ],
-      "viewCount": 12,
-      "createdAt": "2026-07-03T08:00:00Z"
-    }
-  ],
+  "bestPractices": [],
   "diagnosticAnswerKeys": []
 }
