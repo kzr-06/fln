@@ -29,6 +29,8 @@ import { BlocksPanel } from './panels/BlocksPanel';
 import { AnalyticsPanel } from './panels/AnalyticsPanel';
 import { StudentProfilePanel } from './panels/StudentProfilePanel';
 import { BestPracticesPanel } from './panels/BestPracticesPanel';
+import { PageHeader } from './panels/PanelShared';
+import { CertificationReviewPanel } from './CertificationReviewPanel';
 
 interface PanelViewsProps {
   activePanel: string;
@@ -156,8 +158,22 @@ export const PanelViews: React.FC<PanelViewsProps> = ({ activePanel, currentUser
     return <SecurityPanel currentUser={currentUser} token={token} />;
   }
 
+<<<<<<< HEAD
   if (panel === 'best_practices') {
     return <BestPracticesPanel currentUser={currentUser} token={token} />;
+=======
+  if (panel === 'certification_reviews') {
+    return (
+      <div className="space-y-4 animate-fade-in" id="certification-reviews-panel">
+        <PageHeader
+          title="Certification Reviews"
+          desc="Review student certifications flagged for admin attention. Decisions are audit-logged."
+          icon={<Award className="h-5 w-5" />}
+        />
+        <CertificationReviewPanel currentUser={currentUser} token={token} />
+      </div>
+    );
+>>>>>>> upstream/main
   }
 
   // Fallback for any unmatched panel — renders the roles workspace (dashboard) as the content
