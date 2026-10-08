@@ -121,3 +121,35 @@ test('Backend routes source: POST and PATCH handlers extract and forward assessm
     'Backend PATCH updates must include assessmentMode',
   );
 });
+
+test('Frontend QuestionTemplatePanel source: Mode filter and table use legacy fallback', () => {
+  const src = readSource(PANEL_SOURCE);
+
+  // Displayed mode uses fallback
+  assert.match(
+    src,
+    /\{t\.assessmentMode\s*\?\?\s*'written'\}/,
+    'Table cell must display legacy questions as "written"',
+  );
+
+  // Filtering logic uses fallback
+  assert.match(
+    src,
+    /\(filterMode\s*===\s*''\s*\|\|\s*\(t\.assessmentMode\s*\?\?\s*'written'\)\s*===\s*filterMode\)/,
+    'Filter logic must match legacy questions as "written"',
+  );
+
+  // Filter options exist
+  assert.match(
+    src,
+    /aria-label="Filter by mode"[\s\S]*?<option[^>]*>written<\/option>[\s\S]*?<option[^>]*>observed<\/option>[\s\S]*?<option[^>]*>both<\/option>/,
+    'Filter must include written, observed, and both options',
+  );
+
+  // Table header exists
+  assert.match(
+    src,
+    /<th>Mode<\/th>|<th[^>]*>Mode<\/th>/,
+    'Table headers must include a Mode column',
+  );
+});
