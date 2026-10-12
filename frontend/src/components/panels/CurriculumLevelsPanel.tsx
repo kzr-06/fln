@@ -4,7 +4,7 @@ import { apiFetch } from '../../services/apiClient';
 import type { CurriculumLevel, CurriculumCoverage, LevelContentStatus } from '../../types';
 
 /**
- * The whole 93-level curriculum, read from the `curriculumLevels` collection.
+ * The whole curriculum, read from the `curriculumLevels` collection.
  *
  * Every other level list in this app is built from a hand-authored table. This
  * one is not: it renders whatever the database holds, so a level added or

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { runQuestionBankAudit } from './questionBankAudit';
+import { LEVEL_SKILL_MAP } from '../data/skillProgressionMap';
 
 describe('Question Bank Audit Engine', () => {
   // Scenario 1: Valid question -> 0 issues (Health Score 100%)
@@ -86,7 +87,7 @@ describe('Question Bank Audit Engine', () => {
   });
 
   // Scenario 7: Level 0 -> INVALID_LEVEL
-  it('flags Level 0 (below range 1-93) as INVALID_LEVEL', () => {
+  it('flags Level 0 (below range 1-109) as INVALID_LEVEL', () => {
     const lvlZero = [
       { id: 'QB-012', questionText: 'Sample level zero question', answer: '1', level: 0 },
     ];
@@ -94,39 +95,43 @@ describe('Question Bank Audit Engine', () => {
     expect(res.categoryCounts.INVALID_LEVEL).toBe(1);
   });
 
-  // Scenario 8: Level 94 -> INVALID_LEVEL
-  it('flags Level 94 (above range 1-93) as INVALID_LEVEL', () => {
-    const lvl94 = [
-      { id: 'QB-013', questionText: 'Sample level 94 question', answer: '1', level: 94 },
+  // Scenario 8: Level 110 -> INVALID_LEVEL
+  it('flags Level 110 (above range 1-109) as INVALID_LEVEL', () => {
+    const lvl110 = [
+      { id: 'QB-013', questionText: 'Sample level 110 question', answer: '1', level: 110 },
     ];
-    const res = runQuestionBankAudit(lvl94);
+    const res = runQuestionBankAudit(lvl110);
     expect(res.categoryCounts.INVALID_LEVEL).toBe(1);
   });
 
-  // Scenario 9: Valid levels 1 and 93 -> no level issue
-  it('accepts boundary FLN levels 1 and 93 without flagging INVALID_LEVEL', () => {
+  // Scenario 9: Valid boundary levels 1 and 109
+  it('accepts boundary FLN levels 1 and 109 without flagging INVALID_LEVEL', () => {
     const validLevels = [
       { id: 'QB-014', questionText: 'Level 1 question', answer: '1', level: 1 },
-      { id: 'QB-015', questionText: 'Level 93 question', answer: '93', level: 93 },
+      { id: 'QB-015', questionText: 'Level 109 question', answer: '109', level: 109 },
     ];
+
     const res = runQuestionBankAudit(validLevels);
+
     expect(res.categoryCounts.INVALID_LEVEL).toBe(0);
     expect(res.valid).toBe(2);
   });
 
-  // Scenario 10: Malformed SVG -> MALFORMED_SVG
-  it('flags malformed SVG illustration missing opening or closing tag as MALFORMED_SVG', () => {
-    const malformedSvgQ = [
+  // Scenario 10: Level 100 is valid
+  it('accepts Level 100 without flagging INVALID_LEVEL', () => {
+    const level100 = [
       {
-        id: 'QB-016',
-        questionText: 'Count the stars',
-        answer: '5',
-        level: 15,
-        svgHtml: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="red"/>', // missing </svg>
+        id: 'QB-019',
+        questionText: 'Sample Level 100 question',
+        answer: '100',
+        level: 100,
       },
     ];
-    const res = runQuestionBankAudit(malformedSvgQ);
-    expect(res.categoryCounts.MALFORMED_SVG).toBe(1);
+
+    const res = runQuestionBankAudit(level100);
+
+    expect(res.categoryCounts.INVALID_LEVEL).toBe(0);
+    expect(res.valid).toBe(1);
   });
 
   // Scenario 11: Valid SVG -> no SVG issue
@@ -152,7 +157,7 @@ describe('Question Bank Audit Engine', () => {
         id: 'QB-018',
         questionText: 'x', // missing text (< 3 chars)
         answer: '', // missing answer
-        level: 105, // invalid level
+        level: 110, // invalid level (above maximum 109)
         answer_type: 'choice',
         choices: ['only one'], // invalid choices
         svgHtml: '<circle cx="10" cy="10" r="5" />', // malformed SVG

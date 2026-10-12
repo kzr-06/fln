@@ -6,6 +6,7 @@ import { Student } from '../../types';
 import { MetricCard } from '../Card';
 import { apiFetch } from '../../services/apiClient';
 import { Users, BarChart3, TrendingUp, TrendingDown, Printer } from 'lucide-react';
+import { MAX_FLN_LEVEL } from '../../data/skillProgressionMap';
 
 // Issue #200: class-level worksheet print-count rollup, piggybacking on
 // #182's Test History log (GET /api/teachers/:id/test-history) rather than
@@ -41,6 +42,7 @@ export const ClassSummaryBar: React.FC<{ students: Student[]; token?: string; te
       .catch(() => {});
     return () => { cancelled = true; };
   }, [token, teacherId]);
+
   const total = students.length;
   const assessed = students.filter(s => s.levelHistory.length > 0).length;
   const pending = total - assessed;
@@ -74,6 +76,7 @@ export const ClassSummaryBar: React.FC<{ students: Student[]; token?: string; te
         <MetricCard title="On Track" value={`${onTrackPercent}%`} subtext="Mastery at current level" icon={TrendingUp} />
         <MetricCard title="Regressed" value={regressed} subtext="Level dropped since last cycle" icon={TrendingDown} />
       </div>
+
       {printCounts.length > 0 && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
           <h4 className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase mb-3 flex items-center gap-1.5">
@@ -89,24 +92,33 @@ export const ClassSummaryBar: React.FC<{ students: Student[]; token?: string; te
           </div>
         </div>
       )}
+
       {topStudents.length > 0 && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
           <h4 className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase mb-3">Top Performing Students</h4>
           <div className="space-y-2">
-            {topStudents.map(s => (
-              <div key={s.id} className="flex justify-between items-center p-3 border border-slate-100 dark:border-slate-700 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold">{s.name}</span>
-                  <span className="text-xs text-slate-400 dark:text-slate-500">{s.classGroup}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-32 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${((s.currentLevel ?? 0) / 93) * 100}%` }} />
+            {topStudents.map(s => {
+              const currentLevel = Math.min(
+  MAX_FLN_LEVEL,
+  Math.max(0, s.currentLevel ?? 0)
+);
+              const progress = Math.min(100, (currentLevel / MAX_FLN_LEVEL) * 100);
+
+              return (
+                <div key={s.id} className="flex justify-between items-center p-3 border border-slate-100 dark:border-slate-700 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold">{s.name}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">{s.classGroup}</span>
                   </div>
-                  <span className="font-mono font-bold text-sm">L{s.currentLevel ?? 0}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="w-32 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${progress}%` }} />
+                    </div>
+                    <span className="font-mono font-bold text-sm">L{currentLevel}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

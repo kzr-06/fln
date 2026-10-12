@@ -318,7 +318,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ user, token,
       {/* Issue #166: Diagnostic Paper Generator + Level-Wise Paper Generator
           + Exam Worksheets Engine cards removed from this dashboard. They
           now live in:
-            - Assessment -> Diagnostic Test (BulkDiagnosticWorkflow + 93 FLN
+            - Assessment -> Diagnostic Test (BulkDiagnosticWorkflow + FLN
               Framework modal — DiagnosticTestPanel.tsx)
             - Worksheets (Level-Wise batch generator + Open Personalization
               Portal + ICR Answer Sheet Scanner launchers — WorksheetsPanel.tsx)

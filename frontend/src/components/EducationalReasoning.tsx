@@ -27,7 +27,7 @@ interface ReasoningSectionProps {
  * Educational Reasoning — Phase 1 of Learning Progression Intelligence.
  *
  * Renders the structured `reasoning` payload that the backend builds from the
- * existing FLN 93-level curriculum. When the payload is absent (e.g. legacy
+ * existing FLN curriculum. When the payload is absent (e.g. legacy
  * seed data, older reports), it gracefully falls back to the report's
  * narrative string so the UI is never broken.
  */
