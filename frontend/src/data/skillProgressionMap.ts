@@ -904,6 +904,7 @@ export const LEVEL_SKILL_MAP: LevelSkillMapping[] = [
       { levelId: 'L98', relationshipType: 'often_precedes',
         rationale: "Demoted from required_for_procedure (issue #279): perimeter/area computation is fundamentally addition/multiplication over given measurements — unit conversion is only needed for the subset of problems with mixed units, not the core skill." }] }),
 ];
+export const MAX_FLN_LEVEL = LEVEL_SKILL_MAP.length;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sanity checks

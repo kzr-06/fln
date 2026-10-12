@@ -561,7 +561,7 @@ export interface LevelMapPayload {
  */
 export type LevelContentStatus = 'ready' | 'no-content' | 'unmapped';
 
-/** One row of the 93-level curriculum, as served by /api/curriculum/levels. */
+/** One row of the curriculum, as served by /api/curriculum/levels. */
 export interface CurriculumLevel {
   conceptId: string;
   levelNumber: number;
